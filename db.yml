@@ -1,0 +1,27 @@
+---
+- hosts: localhost
+  user: fsalaman
+  become: no
+  vars:
+    - modified: "aix.sql"
+    - DBUSER: sabadell
+    - DBPASSWD: Hola\\\$1
+    - DBINSTANCE: rhel79vm1/XEPDB1
+    - sshuser: oracle
+    - sshpasswd: Rackspace.123
+    - oradir: /home/oracle/oracle_scripts
+  tasks:
+    - name: Run SQL script AIX version
+      shell: |
+        #!/bin/bash
+        db_aix_sql_files={{ oradir  }}/$(date +"%Y%m%d%H%M%S")$RANDOM
+        echo $db_aix_sql_files
+        sshpass -p{{ sshpasswd }} ssh -l oracle 172.10.10.17 "mkdir -p $db_aix_sql_files"
+        sshpass -p{{ sshpasswd }} scp {{ modified }} {{ sshuser }}@172.10.10.17:$db_aix_sql_files
+        sshpass -p{{ sshpasswd }} scp orascript.sh {{ sshuser }}@172.10.10.17:{{ oradir }}
+        sshpass -p{{ sshpasswd }} ssh -l {{ sshuser  }} 172.10.10.17 "whoami; cd {{ oradir }} && chmod +x orascript.sh && ./orascript.sh {{ DBUSER  }} {{ DBPASSWD  }} {{ DBINSTANCE  }} $db_aix_sql_files ; ls -lrth $db_aix_sql_files; rm -rf $db_aix_sql_files"
+      register: exescripts
+      failed_when:  exescripts.stdout | regex_search('ERROR') 
+
+    - name: Check
+      debug: var=exescripts

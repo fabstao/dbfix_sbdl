@@ -1,0 +1,5 @@
+[linux]
+172.10.10.17
+
+[local]
+localhost ansible_connection=local
